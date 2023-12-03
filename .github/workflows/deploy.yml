@@ -1,0 +1,50 @@
+name: Deploy Kube RBAC Proxy
+
+on: push
+
+env:
+  IMAGE_TO: "ghcr.io/${{ github.repository }}"
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Images
+        run: |
+          branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          version="${branch#release-}"
+          export IMAGE_TAG=$(date "+${version}-%Y-%m-%d-%H%M%S")
+          
+          echo "Building and pushing images with tag ${IMAGE_TAG}"
+          
+          # Replace golang builder image
+          sed -i "s/registry\.ci\.openshift\.org\/ocp\/builder:rhel-[0-9]\+-/registry\.ci\.openshift\.org\/openshift\/release:/g" Dockerfile.ocp
+          sed -i "s/-openshift-[0-9]\+\.[0-9]\+ AS builder/ AS builder/g" Dockerfile.ocp
+          
+          # Replace ocp with origin base image
+          sed -i "s/FROM registry.ci.openshift.org\/ocp/FROM registry.ci.openshift.org\/origin/g" Dockerfile.ocp
+          
+          # Build and push docker image
+          podman build -f Dockerfile.ocp -t ${IMAGE_TO}/kube-rbac-proxy:${IMAGE_TAG} .
+          podman tag ${IMAGE_TO}/kube-rbac-proxy:${IMAGE_TAG} ${IMAGE_TO}/kube-rbac-proxy:${version}
+          podman push ${IMAGE_TO}/kube-rbac-proxy:${IMAGE_TAG}
+          podman push ${IMAGE_TO}/kube-rbac-proxy:${version}
