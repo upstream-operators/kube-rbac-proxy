@@ -1,19 +1,19 @@
-From 76bae620af979cfbfd66e3135107c266c6b8ec48 Mon Sep 17 00:00:00 2001
+From c08a4a1171734cbf6b5a9b18019e4d6bd6073f6e Mon Sep 17 00:00:00 2001
 From: Owen Howard <owen@ziax.com>
 Date: Sun, 3 Dec 2023 20:13:41 +0000
 Subject: [PATCH] Deployment workflow
 
 ---
- .github/workflows/deploy.yml | 50 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 50 insertions(+)
+ .github/workflows/deploy.yml | 51 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 51 insertions(+)
  create mode 100644 .github/workflows/deploy.yml
 
 diff --git a/.github/workflows/deploy.yml b/.github/workflows/deploy.yml
 new file mode 100644
-index 00000000..50aa8f52
+index 00000000..030b2eb2
 --- /dev/null
 +++ b/.github/workflows/deploy.yml
-@@ -0,0 +1,50 @@
+@@ -0,0 +1,51 @@
 +name: Deploy Kube RBAC Proxy
 +
 +on: push
@@ -53,6 +53,7 @@ index 00000000..50aa8f52
 +          echo "Building and pushing images with tag ${IMAGE_TAG}"
 +          
 +          # Replace golang builder image
++          sed -i "s/registry\.svc\.ci\.openshift\.org/registry\.ci\.openshift\.org/g" Dockerfile.ocp
 +          sed -i "s/registry\.ci\.openshift\.org\/ocp\/builder:rhel-[0-9]\+-/registry\.ci\.openshift\.org\/openshift\/release:/g" Dockerfile.ocp
 +          sed -i "s/-openshift-[0-9]\+\.[0-9]\+ AS builder/ AS builder/g" Dockerfile.ocp
 +          
